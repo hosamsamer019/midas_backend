@@ -1,0 +1,26 @@
+numpy
+pandas
+matplotlib
+seaborn
+scipy
+scikit-learn
+openpyxl
+xlrd
+plotly
+st atsmodels
+sqlalchemy
+mysql-connector-python
+psycopg2-binary
+jupyter
+nltk
+spacy
+textblob
+pyspark
+dask
+geopandas
+folium
+shapely
+opencv-python
+scikit-image
+streamlit
+dash
