@@ -87,7 +87,12 @@ def main():
 
     # AI Prediction endpoint (may not be implemented yet)
     total_tests += 1
-    if test_endpoint("AI Predict", "POST", f"{BASE_URL}/ai/predict/", headers=headers, data={"bacteria_id": 1}, expected_status=200):
+    if test_endpoint("AI Predict", "POST", f"{BASE_URL}/ai/predict/", headers=headers, data={"bacteria_name": "E. coli"}, expected_status=200):
+        tests_passed += 1
+
+    # Welcome endpoint
+    total_tests += 1
+    if test_endpoint("Welcome", "GET", f"{BASE_URL}/welcome/", expected_status=200):
         tests_passed += 1
 
     # File upload (may not be implemented yet)

@@ -23,9 +23,13 @@ urlpatterns = [
     path('antibiotic-effectiveness/', views.AntibioticEffectivenessView.as_view(), name='antibiotic_effectiveness'),
     path('resistance-over-time/', views.ResistanceOverTimeView.as_view(), name='resistance_over_time'),
     path('reports/', views.ReportView.as_view(), name='reports'),
+    path('reports/<str:report_type>/', views.ReportView.as_view(), name='reports_by_type'),
     path('ai/predict/', views.AIPredictView.as_view(), name='ai_predict'),
     path('digital-signature/', views.DigitalSignatureView.as_view(), name='digital_signature'),
+    path('ocr/', views.OCRView.as_view(), name='ocr'),
     path('bacteria-list/', views.BacteriaListView.as_view(), name='bacteria_list'),
     path('antibiotics-list/', views.AntibioticListView.as_view(), name='antibiotics_list'),
     path('departments-list/', views.DepartmentListView.as_view(), name='departments_list'),
+    path('resistance-heatmap/', views.ResistanceHeatmapView.as_view(), name='resistance_heatmap'),
+    path('welcome/', views.WelcomeView.as_view(), name='welcome'),
 ]

@@ -1,0 +1,10 @@
+{
+  "timestamp": "20251114_160709",
+  "results": {
+    "total": 85,
+    "passed": 63,
+    "failed": 22,
+    "warnings": 1
+  },
+  "pass_rate": 74.11764705882354
+}

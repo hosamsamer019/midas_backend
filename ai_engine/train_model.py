@@ -128,52 +128,54 @@ def load_model(model_path='ai_engine/model.pkl', encoders_path='ai_engine/encode
         print("Model files not found. Please train the model first.")
         return None, None
 
-def predict_antibiotic(bacteria_name, encoders, model, top_n=3):
-    """Predict antibiotic effectiveness for a given bacteria"""
+def predict_antibiotic(bacteria_name, encoders=None, model=None, top_n=None):
+    """Predict antibiotic effectiveness for a given bacteria using database statistics"""
     try:
-        bacteria_encoded = encoders['bacteria_encoder'].transform([bacteria_name])[0]
-    except ValueError:
-        return {"error": f"Bacteria '{bacteria_name}' not found in training data"}
+        # Get the bacteria object
+        bacteria = Bacteria.objects.get(name=bacteria_name)
+    except Bacteria.DoesNotExist:
+        return {"error": f"Bacteria '{bacteria_name}' not found in database"}
 
     # Get all antibiotics
     antibiotics = Antibiotic.objects.all()
 
-    predictions = []
+    recommendations = []
     for antibiotic in antibiotics:
-        try:
-            category_encoded = encoders['category_encoder'].transform([antibiotic.category])[0]
-            mechanism_encoded = encoders['mechanism_encoder'].transform([antibiotic.mechanism])[0]
-        except ValueError:
-            continue  # Skip if category/mechanism not in training data
+        # Query database for actual sensitivity statistics
+        total_tests = TestResult.objects.filter(
+            sample__bacteria=bacteria,
+            antibiotic=antibiotic
+        ).count()
 
-        # Create feature vector (using default values for department/hospital/zone)
-        features = np.array([[bacteria_encoded, category_encoded, mechanism_encoded, 20, 0, 0]])
+        sensitive_count = TestResult.objects.filter(
+            sample__bacteria=bacteria,
+            antibiotic=antibiotic,
+            sensitivity__iexact='sensitive'
+        ).count()
 
-        # Get prediction probabilities
-        proba = model.predict_proba(features)[0]
+        # Calculate effectiveness percentage (0 if no tests)
+        effectiveness = (sensitive_count / total_tests) * 100 if total_tests > 0 else 0
 
-        # Get the class with highest probability
-        predicted_class_idx = np.argmax(proba)
-        confidence = proba[predicted_class_idx]
-
-        sensitivity_label = encoders['sensitivity_encoder'].inverse_transform([predicted_class_idx])[0]
-
-        predictions.append({
+        recommendations.append({
             'antibiotic': antibiotic.name,
-            'predicted_sensitivity': sensitivity_label,
-            'confidence': float(confidence),
+            'effectiveness': round(effectiveness, 2),
+            'total_tests': total_tests,
+            'sensitive_cases': sensitive_count,
             'category': antibiotic.category,
             'mechanism': antibiotic.mechanism
         })
 
-    # Sort by confidence (higher is better for sensitive predictions)
-    sensitive_predictions = [p for p in predictions if p['predicted_sensitivity'] == 'sensitive']
-    sensitive_predictions.sort(key=lambda x: x['confidence'], reverse=True)
+    # Sort by effectiveness (higher is better)
+    recommendations.sort(key=lambda x: x['effectiveness'], reverse=True)
+
+    # Return all antibiotics if top_n is None, otherwise limit to top_n
+    result_recommendations = recommendations if top_n is None else recommendations[:top_n]
 
     return {
         'bacteria': bacteria_name,
-        'recommendations': sensitive_predictions[:top_n],
-        'total_antibiotics': len(predictions)
+        'recommendations': result_recommendations,
+        'total_antibiotics': len(antibiotics),
+        'tested_antibiotics': len([r for r in recommendations if r['total_tests'] > 0])
     }
 
 if __name__ == "__main__":
