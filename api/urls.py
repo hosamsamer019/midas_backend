@@ -24,4 +24,8 @@ urlpatterns = [
     path('resistance-over-time/', views.ResistanceOverTimeView.as_view(), name='resistance_over_time'),
     path('reports/', views.ReportView.as_view(), name='reports'),
     path('ai/predict/', views.AIPredictView.as_view(), name='ai_predict'),
+    path('digital-signature/', views.DigitalSignatureView.as_view(), name='digital_signature'),
+    path('bacteria-list/', views.BacteriaListView.as_view(), name='bacteria_list'),
+    path('antibiotics-list/', views.AntibioticListView.as_view(), name='antibiotics_list'),
+    path('departments-list/', views.DepartmentListView.as_view(), name='departments_list'),
 ]

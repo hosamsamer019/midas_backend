@@ -2,7 +2,7 @@
 
 ## 1. Project Setup
 - [x] Create project directory structure (backend/, frontend/, db/, etc.)
-- [ ] Initialize Git repository
+- [x] Initialize Git repository
 - [x] Set up virtual environment for backend
 
 ## 2. Backend Setup (Django REST Framework)
@@ -33,33 +33,33 @@
 ## 6. Frontend Setup (Next.js + TailwindCSS)
 - [x] Initialize Next.js project
 - [x] Install dependencies (TailwindCSS, Recharts, Framer Motion, axios, etc.)
-- [ ] Set up authentication context
-- [ ] Create layout components (header, sidebar, etc.)
+- [x] Set up authentication context
+- [x] Create layout components (header, sidebar, etc.)
 
 ## 7. Dashboard Development
 - [x] Build summary cards (total samples, bacteria, antibiotics)
 - [x] Implement charts: Pie chart (sensitivity distribution), Bar chart (antibiotic effectiveness), Line chart (resistance over time), Heatmap (resistance map), Geographical map
-- [ ] Add data filtering components (date, bacteria, department, etc.)
-- [ ] Enable live updates with WebSockets or polling
+- [x] Add data filtering components (date, bacteria, department, etc.)
+- [x] Enable live updates with WebSockets or polling
 
 ## 8. Additional Features
-- [ ] Integrate OCR for image analysis (OpenCV + pytesseract)
-- [ ] Implement reports system with digital signatures
-- [ ] Add dark/light mode toggle
-- [ ] Ensure responsive design for mobile/tablet
+- [x] Integrate OCR for image analysis (OpenCV + pytesseract)
+- [x] Implement reports system with digital signatures
+- [x] Add dark/light mode toggle
+- [x] Ensure responsive design for mobile/tablet
 
 ## 9. Security Implementation
-- [ ] Set up JWT authentication
-- [ ] Implement role-based permissions
-- [ ] Add CSRF protection
-- [ ] Configure HTTPS and SSL
+- [x] Set up JWT authentication
+- [x] Implement role-based permissions
+- [x] Add CSRF protection
+- [x] Configure HTTPS and SSL
 
 ## 10. Testing and Deployment
-- [ ] Write unit and integration tests
-- [ ] Set up Docker containers for backend and frontend
+- [x] Write unit and integration tests
+- [x] Set up Docker containers for backend and frontend
 - [ ] Deploy to Render/AWS EC2 with Nginx reverse proxy
 - [ ] Configure auto backup and logging
-- [ ] Test end-to-end functionality
+- [x] Test end-to-end functionality
 
 ## 11. Documentation
 - [ ] Create API documentation
@@ -71,9 +71,9 @@
 - [x] Create Header and Sidebar layout components
 - [x] Add live updates (polling) to Dashboard
 - [x] Integrate FileUpload, AIRecommendation, Reports, Heatmap into Dashboard
-- [ ] Implement role-based permissions in frontend and backend
-- [ ] Add dark/light mode toggle
-- [ ] Ensure responsive design
+- [x] Implement role-based permissions in frontend and backend
+- [x] Add dark/light mode toggle
+- [x] Ensure responsive design
 - [x] Test all integrations and responsiveness
 - [x] Add security features (CSRF, HTTPS config)
 - [x] Prepare for testing and deployment

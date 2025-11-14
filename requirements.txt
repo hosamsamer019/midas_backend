@@ -7,7 +7,7 @@ scikit-learn
 openpyxl
 xlrd
 plotly
-st atsmodels
+statsmodels
 sqlalchemy
 mysql-connector-python
 psycopg2-binary
@@ -21,6 +21,8 @@ geopandas
 folium
 shapely
 opencv-python
+pytesseract
+cryptography
 scikit-image
 streamlit
 dash
