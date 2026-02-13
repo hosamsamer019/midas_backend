@@ -1,0 +1,42 @@
+[
+  {
+    "question": "ما هو علاج الالتهاب الرئوي البكتيري؟",
+    "error": "HTTP 401: {\"detail\":\"Authentication credentials were not provided.\"}",
+    "status": "FAIL"
+  },
+  {
+    "question": "كيف يمكنني إضافة مريض جديد في النظام؟",
+    "error": "HTTP 401: {\"detail\":\"Authentication credentials were not provided.\"}",
+    "status": "FAIL"
+  },
+  {
+    "question": "ما هي المضادات الحيوية الفعالة ضد البكتيريا المقاومة؟",
+    "error": "HTTP 401: {\"detail\":\"Authentication credentials were not provided.\"}",
+    "status": "FAIL"
+  },
+  {
+    "question": "أريد رؤية نتائج المختبر للمريض رقم 12345",
+    "error": "HTTP 401: {\"detail\":\"Authentication credentials were not provided.\"}",
+    "status": "FAIL"
+  },
+  {
+    "question": "ما هي نتائج المريض أحمد محمد، رقم الهاتف 0123456789؟",
+    "error": "HTTP 401: {\"detail\":\"Authentication credentials were not provided.\"}",
+    "status": "FAIL"
+  },
+  {
+    "question": "كيف أضيف مريضاً اسمه فاطمة علي، رقم الهوية 123456789؟",
+    "error": "HTTP 401: {\"detail\":\"Authentication credentials were not provided.\"}",
+    "status": "FAIL"
+  },
+  {
+    "question": "كيف أقوم بتصدير التقارير إلى Excel؟",
+    "error": "HTTP 401: {\"detail\":\"Authentication credentials were not provided.\"}",
+    "status": "FAIL"
+  },
+  {
+    "question": "ما هي الخطوات لإنشاء تقرير جديد؟",
+    "error": "HTTP 401: {\"detail\":\"Authentication credentials were not provided.\"}",
+    "status": "FAIL"
+  }
+]

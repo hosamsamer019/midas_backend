@@ -1,0 +1,25 @@
+{
+  "passed": [
+    "Ollama service is running",
+    "Django server is running",
+    "Bacteria model: 40 records",
+    "System knowledge function works",
+    "Bacteria info function works",
+    "Antibiotic info function works",
+    "Procedure info function works",
+    "Utils LocalAI module works"
+  ],
+  "failed": [
+    "Ollama generation status: 500",
+    "Endpoint error /api/chatbot/chatbot/: HTTPConnectionPool(host='localhost', port=8000): Read timed out. (read timeout=5)",
+    "Endpoint error /api/chatbot/chatbot/chat/: HTTPConnectionPool(host='localhost', port=8000): Read timed out. (read timeout=5)",
+    "Endpoint error /api/chatbot/chatbot/quick_query/: ('Connection aborted.', ConnectionResetError(10054, 'An existing connection was forcibly closed by the remote host', None, 10054, None))"
+  ],
+  "warnings": [
+    "Endpoint /api/chatbot/chatbot/stream_chat/: 500",
+    "Endpoint /api/chatbot/chatbot/history/: 500",
+    "Endpoint /api/chatbot/chatbot/clear_history/: 500",
+    "Only 1/7 endpoints accessible",
+    "Antibiotic endpoint: 401"
+  ]
+}

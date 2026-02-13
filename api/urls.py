@@ -16,6 +16,7 @@ urlpatterns = [
     path('auth/', include('rest_framework.urls')),
     path('auth/login/', views.CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('auth/token/', views.CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('auth/logout/', views.LogoutView.as_view(), name='logout'),
     path('auth/register/', views.RegisterView.as_view(), name='register'),
     path('stats/', views.StatsView.as_view(), name='stats'),
     path('analytics/', views.AnalyticsView.as_view(), name='analytics'),

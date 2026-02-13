@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -30,6 +31,12 @@ ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'testserver']
 # Custom user model
 AUTH_USER_MODEL = 'users.User'
 
+# Custom authentication backend for email login
+AUTHENTICATION_BACKENDS = [
+    'users.backends.EmailBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
 
 # Application definition
 
@@ -43,6 +50,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
+    'core',  # Unified data processing layer
     'users',
     'bacteria',
     'antibiotics',
@@ -50,6 +58,9 @@ INSTALLED_APPS = [
     'results',
     'ai_recommendations',
     'uploads',
+    'chatbot',
+    'audit',
+    'messaging',  # Internal messaging system
 ]
 
 MIDDLEWARE = [
@@ -89,7 +100,7 @@ WSGI_APPLICATION = 'antibiogram.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': BASE_DIR / 'icu_antibiotic.db',
     }
 }
 
@@ -166,7 +177,7 @@ SIMPLE_JWT = {
 
     'AUTH_HEADER_TYPES': ('Bearer',),
     'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
-    'USER_ID_FIELD': 'id',
+    'USER_ID_FIELD': 'user_id',
     'USER_ID_CLAIM': 'user_id',
 
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
@@ -210,16 +221,23 @@ if not DEBUG:
     X_FRAME_OPTIONS = 'DENY'
 
 # Cloudinary settings (add your credentials)
-import cloudinary
-import cloudinary.uploader
-import cloudinary.api
+# import cloudinary
+# import cloudinary.uploader
+# import cloudinary.api
 
-cloudinary.config(
-    cloud_name="your_cloud_name",
-    api_key="your_api_key",
-    api_secret="your_api_secret"
-)
+# cloudinary.config(
+#     cloud_name="your_cloud_name",
+#     api_key="your_api_key",
+#     api_secret="your_api_secret"
+# )
 
 # Media files
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+# LocalAI Configuration (Free, local AI instead of OpenAI)
+LOCALAI_BASE_URL = 'http://localhost:8080/v1'
+LOCALAI_API_KEY = 'localai'
+
+# OpenAI API Key (fallback only, not used by default)
+# Read from environment variable for security
+OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')

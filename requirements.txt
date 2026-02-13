@@ -63,3 +63,8 @@ cloudinary==1.41.0
 
 # Jupyter (Development)
 jupyter==1.1.1
+
+# AI and NLP Libraries
+openai==0.28
+sentence-transformers
+faiss-cpu

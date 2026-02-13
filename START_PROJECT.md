@@ -299,3 +299,14 @@ For issues and questions:
 - Python: 3.9+
 - Node.js: 18+
 - PostgreSQL: 13+
+<!--  & "E:/Graduation project/Data_Analysis_Project/.venv/Scripts/Activate.ps1" -->
+
+
+<!-- cd Data_Analysis_Project && python manage.py runserver -->
+<!-- cd Data_Analysis_Project/frontend && npm run dev -->
+
+<!-- Users created:
+  Admin: admin@hospital.com / admin123
+  Doctor: doctor@hospital.com / doctor123
+  Lab: lab@hospital.com / lab123
+  Viewer: viewer@hospital.com / viewer123 -->

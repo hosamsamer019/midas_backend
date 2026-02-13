@@ -1,3 +1,4 @@
+
 import logging
 import re
 from rest_framework import viewsets, status
@@ -9,15 +10,12 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
+from django.utils import timezone
 from django.contrib.auth import authenticate
 from django.db.models import Count, Q, F
 from django.http import HttpResponse
 from reportlab.pdfgen import canvas
 from openpyxl import Workbook
-import pandas as pd
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
 import joblib
 import os
 import sys
@@ -34,31 +32,98 @@ from samples.models import Sample
 from results.models import TestResult
 from uploads.models import Upload
 from ai_recommendations.models import AIRecommendation
+from audit.models import AuditLog
 from .serializers import (
     UserSerializer, BacteriaSerializer, AntibioticSerializer,
     SampleSerializer, TestResultSerializer, UploadSerializer,
     AIRecommendationSerializer, RegisterSerializer
 )
+from .permissions import AdminPermissions, DoctorPermissions, LabPermissions, ViewerPermissions, RoleBasedPermissions
 
 # Set up logging
 logger = logging.getLogger(__name__)
 
-@method_decorator(csrf_exempt, name='dispatch')
 class CustomTokenObtainPairView(TokenObtainPairView):
     permission_classes = (AllowAny,)
     authentication_classes = []  # Disable authentication for login
-    permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
-        response = super().post(request, *args, **kwargs)
-        if response.status_code == 200:
-            user = authenticate(username=request.data.get('username'), password=request.data.get('password'))
-            if user:
-                refresh = RefreshToken.for_user(user)
-                response.data['refresh'] = str(refresh)
-                response.data['access'] = str(refresh.access_token)
-                response.data['user'] = UserSerializer(user).data
-        return response
+        # Get credentials from request
+        email = request.data.get('email') or request.data.get('username')
+        password = request.data.get('password')
+
+        # Authenticate user with email
+        user = authenticate(request, username=email, password=password)
+
+        if user is None:
+            return Response(
+                {"error": "Invalid credentials"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        # Generate tokens
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+        refresh_token = str(refresh)
+
+        # Log login event
+        ip_address = self.get_client_ip(request)
+        AuditLog.objects.create(
+            user_id=user,
+            action_type='login',
+            ip_address=ip_address
+        )
+
+        # Update last login
+        user.last_login = timezone.now()
+        user.save(update_fields=['last_login'])
+
+        return Response({
+            'refresh': refresh_token,
+            'access': access_token,
+            'user': UserSerializer(user).data
+        })
+
+    def get_client_ip(self, request):
+        """Get client IP address"""
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        return ip
+
+class LogoutView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        """Logout user and log the event"""
+        try:
+            # Log logout event
+            ip_address = self.get_client_ip(request)
+            AuditLog.objects.create(
+                user_id=request.user,
+                action_type='logout',
+                ip_address=ip_address
+            )
+
+            # For JWT, logout is handled client-side by discarding tokens
+            # Optionally blacklist the token if using token blacklist
+            return Response({"message": "Successfully logged out"})
+
+        except Exception as e:
+            logger = logging.getLogger(__name__)
+            logger.error("Logout error", exc_info=True)
+            return Response({"error": "Logout failed"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def get_client_ip(self, request):
+        """Get client IP address"""
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        return ip
 
 class RegisterView(APIView):
     permission_classes = (AllowAny,)
@@ -73,7 +138,7 @@ class RegisterView(APIView):
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [RoleBasedPermissions]
 
 class BacteriaViewSet(viewsets.ModelViewSet):
     queryset = Bacteria.objects.all()
@@ -109,34 +174,53 @@ class StatsView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        total_samples = Sample.objects.count()
-        total_bacteria = Bacteria.objects.count()
-        total_antibiotics = Antibiotic.objects.count()
-        return Response({
-            'total_samples': total_samples,
-            'total_bacteria': total_bacteria,
-            'total_antibiotics': total_antibiotics
-        })
+        try:
+            from core.data_service import create_data_service
+
+            # Create data service with filters from request
+            data_service = create_data_service(request)
+
+            # Get statistics using unified service
+            stats = data_service.get_statistics()
+
+            # Add filter summary
+            filter_summary = data_service.filter_engine.get_filter_summary()
+
+            return Response({
+                **stats,
+                'filters': filter_summary
+            })
+        except Exception as e:
+            logger.error(f"Error in StatsView: {str(e)}", exc_info=True)
+            return Response({"error": "Internal server error occurred while fetching statistics"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class AnalyticsView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [DoctorPermissions]
 
     def get(self, request):
         # Placeholder for analytics data
         return Response({"message": "Analytics data"})
 
 class ReportView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [DoctorPermissions]
 
     def get(self, request, report_type=None):
-        # Get date parameters
-        start_date = request.query_params.get('start_date')
-        end_date = request.query_params.get('end_date')
+        from core.filters import create_filter_engine
+        from core.data_service import UnifiedDataService
 
-        # Filter queryset based on dates if provided
-        queryset = TestResult.objects.select_related('sample', 'sample__bacteria', 'antibiotic').all()
-        if start_date and end_date:
-            queryset = queryset.filter(sample__date__range=[start_date, end_date])
+        # Create filter engine from request parameters
+        filter_engine = create_filter_engine(request)
+        data_service = UnifiedDataService(filter_engine)
+
+        # Get filtered data using unified service
+        filtered_results = data_service.get_filtered_results()
+        stats = data_service.get_statistics()
+
+        # Get filter summary for report title
+        filter_summary = filter_engine.get_filter_summary()
+        date_range = ""
+        if filter_summary.get('active_filters', {}).get('date_from') and filter_summary.get('active_filters', {}).get('date_to'):
+            date_range = f" ({filter_summary['active_filters']['date_from']} to {filter_summary['active_filters']['date_to']})"
 
         # Generate PDF report with charts using matplotlib
         try:
@@ -147,9 +231,7 @@ class ReportView(APIView):
         except ImportError:
             # Fallback to text-only report if matplotlib not available
             response = HttpResponse(content_type='application/pdf')
-            report_title = f"{report_type.title() if report_type else 'Antibiogram'} Report"
-            if start_date and end_date:
-                report_title += f" ({start_date} to {end_date})"
+            report_title = f"{report_type.title() if report_type else 'Antibiogram'} Report{date_range}"
             response['Content-Disposition'] = f'attachment; filename="{report_title.lower().replace(" ", "_")}_report.pdf"'
 
             p = canvas.Canvas(response)
@@ -164,9 +246,7 @@ class ReportView(APIView):
         from reportlab.lib.utils import ImageReader
 
         response = HttpResponse(content_type='application/pdf')
-        report_title = f"{report_type.title() if report_type else 'Antibiogram'} Report"
-        if start_date and end_date:
-            report_title += f" ({start_date} to {end_date})"
+        report_title = f"{report_type.title() if report_type else 'Antibiogram'} Report{date_range}"
         response['Content-Disposition'] = f'attachment; filename="{report_title.lower().replace(" ", "_")}_report.pdf"'
 
         p = canvas.Canvas(response, pagesize=letter)
@@ -177,9 +257,9 @@ class ReportView(APIView):
         p.drawString(100, height - 50, report_title)
 
         # Date range
-        if start_date and end_date:
+        if date_range:
             p.setFont("Helvetica", 12)
-            p.drawString(100, height - 70, f"Report Period: {start_date} to {end_date}")
+            p.drawString(100, height - 70, f"Report Period:{date_range}")
 
         y_pos = height - 100
 
@@ -189,34 +269,25 @@ class ReportView(APIView):
         p.setFont("Helvetica", 12)
         y_pos -= 30
 
-        total_samples = Sample.objects.count()
-        total_bacteria = Bacteria.objects.count()
-        total_antibiotics = Antibiotic.objects.count()
-        filtered_results = queryset.count()
-
-        p.drawString(120, y_pos, f"Total Samples: {total_samples}")
+        p.drawString(120, y_pos, f"Total Samples: {stats['total_samples']}")
         y_pos -= 20
-        p.drawString(120, y_pos, f"Total Bacteria: {total_bacteria}")
+        p.drawString(120, y_pos, f"Total Bacteria: {stats['total_bacteria']}")
         y_pos -= 20
-        p.drawString(120, y_pos, f"Total Antibiotics: {total_antibiotics}")
+        p.drawString(120, y_pos, f"Total Antibiotics: {stats['total_antibiotics']}")
         y_pos -= 20
-        p.drawString(120, y_pos, f"Filtered Results: {filtered_results}")
+        p.drawString(120, y_pos, f"Filtered Results: {stats['total_results']}")
         y_pos -= 40
 
         # Sensitivity stats
-        resistant_count = queryset.filter(sensitivity='Resistant').count()
-        sensitive_count = queryset.filter(sensitivity='Sensitive').count()
-        intermediate_count = queryset.filter(sensitivity='Intermediate').count()
-
         p.setFont("Helvetica-Bold", 14)
         p.drawString(100, y_pos, "Sensitivity Distribution:")
         p.setFont("Helvetica", 12)
         y_pos -= 30
-        p.drawString(120, y_pos, f"Resistant Cases: {resistant_count}")
+        p.drawString(120, y_pos, f"Resistant Cases: {stats['resistant_count']}")
         y_pos -= 20
-        p.drawString(120, y_pos, f"Sensitive Cases: {sensitive_count}")
+        p.drawString(120, y_pos, f"Sensitive Cases: {stats['sensitive_count']}")
         y_pos -= 20
-        p.drawString(120, y_pos, f"Intermediate Cases: {intermediate_count}")
+        p.drawString(120, y_pos, f"Intermediate Cases: {stats['intermediate_count']}")
         y_pos -= 50
 
         # Create charts
@@ -228,11 +299,12 @@ class ReportView(APIView):
             y_pos = height - 100
             chart_y_pos = y_pos
 
-        sensitivity_counts = queryset.values('sensitivity').annotate(count=Count('sensitivity'))
-        if sensitivity_counts:
+        # Get sensitivity distribution from data service
+        sensitivity_data = data_service.get_sensitivity_distribution()
+        if sensitivity_data:
             fig, ax = plt.subplots(figsize=(6, 4))
-            labels = [item['sensitivity'] for item in sensitivity_counts]
-            sizes = [item['count'] for item in sensitivity_counts]
+            labels = [item['name'] for item in sensitivity_data]
+            sizes = [item['value'] for item in sensitivity_data]
             colors = ['#ff9999','#66b3ff','#99ff99']  # Red for Resistant, Blue for Sensitive, Green for Intermediate
             ax.pie(sizes, labels=labels, colors=colors, autopct='%1.1f%%', startangle=90)
             ax.axis('equal')
@@ -260,17 +332,12 @@ class ReportView(APIView):
             p.showPage()
             chart_y_pos = height - 100
 
-        effectiveness_data = queryset.values('antibiotic__name').annotate(
-            effective=Count('id', filter=Q(sensitivity__iexact='sensitive')),
-            total=Count('id')
-        ).annotate(
-            effectiveness=100.0 * F('effective') / F('total')
-        ).order_by('-effectiveness')[:10]  # Top 10 antibiotics
-
+        # Get antibiotic effectiveness from data service
+        effectiveness_data = data_service.get_antibiotic_effectiveness(top_n=10)
         if effectiveness_data:
             fig, ax = plt.subplots(figsize=(8, 4))
-            antibiotics = [item['antibiotic__name'][:15] + '...' if len(item['antibiotic__name']) > 15 else item['antibiotic__name'] for item in effectiveness_data]
-            effectiveness = [round(item['effectiveness'], 1) for item in effectiveness_data]
+            antibiotics = [item['antibiotic'][:15] + '...' if len(item['antibiotic']) > 15 else item['antibiotic'] for item in effectiveness_data]
+            effectiveness = [item['effectiveness'] for item in effectiveness_data]
 
             bars = ax.bar(range(len(antibiotics)), effectiveness, color='#4CAF50')
             ax.set_xlabel('Antibiotics')
@@ -306,14 +373,12 @@ class ReportView(APIView):
             p.showPage()
             chart_y_pos = height - 100
 
-        resistance_trend = queryset.filter(sensitivity__iexact='resistant').values(
-            'sample__date'
-        ).annotate(count=Count('id')).order_by('sample__date')
-
+        # Get resistance over time from data service
+        resistance_trend = data_service.get_resistance_over_time(group_by='month')
         if resistance_trend:
             fig, ax = plt.subplots(figsize=(8, 4))
-            dates = [item['sample__date'].strftime('%Y-%m') for item in resistance_trend]
-            counts = [item['count'] for item in resistance_trend]
+            dates = [item['month'] for item in resistance_trend]
+            counts = [item['resistance'] for item in resistance_trend]
 
             ax.plot(range(len(dates)), counts, marker='o', linestyle='-', color='#f44336')
             ax.set_xlabel('Time Period')
@@ -376,45 +441,78 @@ class SensitivityDistributionView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        sensitivity_counts = TestResult.objects.values('sensitivity').annotate(count=Count('sensitivity'))
-        data = [{'name': item['sensitivity'], 'value': item['count']} for item in sensitivity_counts]
-        return Response(data)
+        try:
+            from core.data_service import create_data_service
+
+            # Create data service with filters from request
+            data_service = create_data_service(request)
+
+            # Get sensitivity distribution using unified service
+            data = data_service.get_sensitivity_distribution()
+
+            return Response(data)
+        except Exception as e:
+            logger.error(f"Error in SensitivityDistributionView: {str(e)}", exc_info=True)
+            return Response({"error": "Internal server error occurred while fetching sensitivity distribution"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class AntibioticEffectivenessView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        effectiveness_data = TestResult.objects.values('antibiotic__name').annotate(
-            effective=Count('id', filter=Q(sensitivity__iexact='sensitive')),
-            total=Count('id')
-        ).annotate(
-            effectiveness=100.0 * F('effective') / F('total')
-        )
-        data = [{'antibiotic': item['antibiotic__name'], 'effectiveness': round(item['effectiveness'], 2)} for item in effectiveness_data]
-        return Response(data)
+        try:
+            from core.data_service import create_data_service
+
+            # Create data service with filters from request
+            data_service = create_data_service(request)
+
+            # Get antibiotic effectiveness using unified service
+            data = data_service.get_antibiotic_effectiveness(top_n=20)
+
+            return Response(data)
+        except Exception as e:
+            logger.error(f"Error in AntibioticEffectivenessView: {str(e)}", exc_info=True)
+            return Response({"error": "Internal server error occurred while fetching antibiotic effectiveness"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class ResistanceOverTimeView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        resistance_trend = TestResult.objects.filter(sensitivity__iexact='resistant').values(
-            'sample__date'
-        ).annotate(count=Count('id')).order_by('sample__date')
-        data = [{'month': item['sample__date'].strftime('%Y-%m'), 'resistance': item['count']} for item in resistance_trend]
-        return Response(data)
+        try:
+            from core.data_service import create_data_service
+
+            # Create data service with filters from request
+            data_service = create_data_service(request)
+
+            # Get resistance over time using unified service
+            data = data_service.get_resistance_over_time(group_by='month')
+
+            return Response(data)
+        except Exception as e:
+            logger.error(f"Error in ResistanceOverTimeView: {str(e)}", exc_info=True)
+            return Response({"error": "Internal server error occurred while fetching resistance over time data"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class AIPredictView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        bacteria_name = request.data.get('bacteria_name')
-        if not bacteria_name:
-            return Response({"error": "Bacteria name is required"}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            from core.data_service import create_data_service
 
-        # Make prediction using database statistics
-        result = predict_antibiotic(bacteria_name, None, None)
+            bacteria_name = request.data.get('bacteria_name')
+            if not bacteria_name:
+                return Response({"error": "Bacteria name is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-        return Response(result)
+            # Create data service with filters from request
+            data_service = create_data_service(request)
+
+            # Get antibiotic recommendations using unified service
+            # This now reads ALL data from the database, not just a subset
+            result = data_service.get_antibiotic_recommendations(bacteria_name, top_n=None)
+
+            return Response(result)
+        except Exception as e:
+            logger.error(f"Error in AIPredictView: {str(e)}", exc_info=True)
+            return Response({"error": "Internal server error occurred while fetching AI predictions"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class DigitalSignatureView(APIView):
     permission_classes = [IsAuthenticated]
@@ -496,52 +594,55 @@ class BacteriaListView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        bacteria = Bacteria.objects.all()
-        data = [{'id': b.id, 'name': b.name, 'type': b.bacteria_type} for b in bacteria]
-        return Response(data)
+        try:
+            bacteria = Bacteria.objects.all()
+            data = [{'id': b.id, 'name': b.name, 'type': b.bacteria_type} for b in bacteria]
+            return Response(data)
+        except Exception as e:
+            logger.error(f"Error in BacteriaListView: {str(e)}", exc_info=True)
+            return Response({"error": "Internal server error occurred while fetching bacteria list"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class AntibioticListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        antibiotics = Antibiotic.objects.all()
-        data = [{'id': a.id, 'name': a.name, 'category': a.category} for a in antibiotics]
-        return Response(data)
+        try:
+            antibiotics = Antibiotic.objects.all()
+            data = [{'id': a.id, 'name': a.name, 'category': a.category} for a in antibiotics]
+            return Response(data)
+        except Exception as e:
+            logger.error(f"Error in AntibioticListView: {str(e)}", exc_info=True)
+            return Response({"error": "Internal server error occurred while fetching antibiotics list"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class DepartmentListView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        departments = Sample.objects.values_list('department', flat=True).distinct()
-        data = [{'name': dept} for dept in departments if dept]
-        return Response(data)
+        try:
+            departments = Sample.objects.values_list('department', flat=True).distinct()
+            data = [{'name': dept} for dept in departments if dept]
+            return Response(data)
+        except Exception as e:
+            logger.error(f"Error in DepartmentListView: {str(e)}", exc_info=True)
+            return Response({"error": "Internal server error occurred while fetching departments list"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class ResistanceHeatmapView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        # Get resistance data for heatmap using proper relationships
-        resistance_data = TestResult.objects.select_related('sample__bacteria', 'antibiotic').filter(
-            sensitivity__iexact='resistant'
-        ).values(
-            'sample__bacteria__name',
-            'antibiotic__name'
-        ).annotate(
-            total_tests=Count('id'),
-            resistant_count=Count('id')
-        )
+        try:
+            from core.data_service import create_data_service
 
-        # Calculate resistance percentage
-        heatmap_data = []
-        for item in resistance_data:
-            resistance_percentage = (item['resistant_count'] / item['total_tests']) * 100 if item['total_tests'] > 0 else 0
-            heatmap_data.append({
-                'bacteria': item['sample__bacteria__name'],
-                'antibiotic': item['antibiotic__name'],
-                'resistance': round(resistance_percentage / 100, 2)  # Convert to decimal for frontend
-            })
+            # Create data service with filters from request
+            data_service = create_data_service(request)
 
-        return Response(heatmap_data)
+            # Get resistance heatmap using unified service (with case-insensitive queries)
+            heatmap_data = data_service.get_resistance_heatmap()
+
+            return Response(heatmap_data)
+        except Exception as e:
+            logger.error(f"Error in ResistanceHeatmapView: {str(e)}", exc_info=True)
+            return Response({"error": f"Internal server error occurred while fetching heatmap data: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class OCRView(APIView):
     permission_classes = [IsAuthenticated]

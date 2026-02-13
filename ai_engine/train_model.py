@@ -9,6 +9,9 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import accuracy_score, classification_report
 import joblib
 
+# Add project root to Python path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 # Set up Django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'antibiogram.settings')
 django.setup()

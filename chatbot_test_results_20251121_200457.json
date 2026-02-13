@@ -1,0 +1,42 @@
+[
+  {
+    "question": "ما هو علاج الالتهاب الرئوي البكتيري؟",
+    "error": "HTTPConnectionPool(host='127.0.0.1', port=8000): Max retries exceeded with url: /api/chatbot/chatbot/chat/ (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x0000028537023B00>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))",
+    "status": "ERROR"
+  },
+  {
+    "question": "كيف يمكنني إضافة مريض جديد في النظام؟",
+    "error": "HTTPConnectionPool(host='127.0.0.1', port=8000): Max retries exceeded with url: /api/chatbot/chatbot/chat/ (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x00000285373392B0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))",
+    "status": "ERROR"
+  },
+  {
+    "question": "ما هي المضادات الحيوية الفعالة ضد البكتيريا المقاومة؟",
+    "error": "HTTPConnectionPool(host='127.0.0.1', port=8000): Max retries exceeded with url: /api/chatbot/chatbot/chat/ (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x00000285373399A0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))",
+    "status": "ERROR"
+  },
+  {
+    "question": "أريد رؤية نتائج المختبر للمريض رقم 12345",
+    "error": "HTTPConnectionPool(host='127.0.0.1', port=8000): Max retries exceeded with url: /api/chatbot/chatbot/chat/ (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002853733A090>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))",
+    "status": "ERROR"
+  },
+  {
+    "question": "ما هي نتائج المريض أحمد محمد، رقم الهاتف 0123456789؟",
+    "error": "HTTPConnectionPool(host='127.0.0.1', port=8000): Max retries exceeded with url: /api/chatbot/chatbot/chat/ (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002853733A780>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))",
+    "status": "ERROR"
+  },
+  {
+    "question": "كيف أضيف مريضاً اسمه فاطمة علي، رقم الهوية 123456789؟",
+    "error": "HTTPConnectionPool(host='127.0.0.1', port=8000): Max retries exceeded with url: /api/chatbot/chatbot/chat/ (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x0000028537304920>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))",
+    "status": "ERROR"
+  },
+  {
+    "question": "كيف أقوم بتصدير التقارير إلى Excel؟",
+    "error": "HTTPConnectionPool(host='127.0.0.1', port=8000): Max retries exceeded with url: /api/chatbot/chatbot/chat/ (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002853733A210>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))",
+    "status": "ERROR"
+  },
+  {
+    "question": "ما هي الخطوات لإنشاء تقرير جديد؟",
+    "error": "HTTPConnectionPool(host='127.0.0.1', port=8000): Max retries exceeded with url: /api/chatbot/chatbot/chat/ (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x0000028537339340>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))",
+    "status": "ERROR"
+  }
+]

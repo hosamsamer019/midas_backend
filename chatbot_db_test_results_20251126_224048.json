@@ -1,0 +1,27 @@
+{
+  "database": true,
+  "models": {
+    "Sample": 103,
+    "Bacteria": 40,
+    "Antibiotic": 35,
+    "TestResult": 2065,
+    "ChatMessage": 64,
+    "KnowledgeBase": 0
+  },
+  "api": {
+    "/api/stats/": true,
+    "/api/antibiotic-effectiveness/": true,
+    "/api/resistance-over-time/": true,
+    "/api/departments-list/": true,
+    "/api/resistance-heatmap/": true,
+    "/api/sensitivity-distribution/": true
+  },
+  "chat": {
+    "What is the resistance rate for E. coli?": false,
+    "Show me antibiotic effectiveness data": false,
+    "What are the resistance trends over time?": false,
+    "Tell me about department-wise resistance patterns": false
+  },
+  "analysis": null,
+  "overall_score": 3
+}

@@ -187,3 +187,6 @@ ai_engine/model.pkl
 # Temporary files
 *.tmp
 *.temp
+# Configuration with sensitive patterns
+pii_patterns.json
+pii_patterns.local.json
