@@ -1,11 +1,10 @@
 [build]
-builder = "NIXPACKS"
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "python manage.py migrate && python manage.py collectstatic --noinput && gunicorn antibiogram.wsgi:application --bind 0.0.0.0:$PORT"
-
-[build.env]
-PYTHON_VERSION = "3.11"
+healthcheckPath = "/api/health/"
+healthcheckTimeout = 300
 
 [env]
 SECRET_KEY = "${SECRET_KEY}"
