@@ -1,0 +1,13 @@
+# Development-only dependencies
+# Install with: pip install -r requirements.txt -r requirements-dev.txt
+
+# Jupyter
+jupyter==1.1.1
+
+# Heavy ML/NLP (semantic search, vector embeddings)
+# ~2GB+ combined — not needed in production
+sentence-transformers
+faiss-cpu
+
+# Big Data (Spark requires Java runtime)
+pyspark==3.5.3
