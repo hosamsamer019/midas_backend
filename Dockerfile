@@ -27,7 +27,7 @@ WORKDIR /app
 # The pip install layer is only invalidated when requirements.txt changes.
 COPY requirements.txt .
 
-RUN --mount=type=cache,target=/root/.cache/pip \
+RUN --mount=type=cache,id=pip-cache,target=/root/.cache/pip \
     pip install --upgrade pip && \
     pip install -r requirements.txt
 
@@ -61,4 +61,4 @@ RUN python manage.py collectstatic --noinput || true
 EXPOSE 8000
 
 # Run migrations then start gunicorn
-CMD ["sh", "-c", "python manage.py migrate && gunicorn antibiogram.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120"]
+CMD ["sh", "-c", "python3 manage.py migrate && gunicorn antibiogram.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120"]
